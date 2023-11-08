@@ -6,6 +6,7 @@ import { IncreaseViewDto } from './dto/increase-view.dto';
 @Injectable()
 export class MediumService {
   browser: puppeteer.Browser;
+  browserEdge: puppeteer.Browser;
   distanceToFooter: number;
   constructor() {}
 
@@ -25,17 +26,17 @@ export class MediumService {
     }
 
     for (const url of listUrl) {
-      await this.handleMedium(url);
+      await this.handleMedium(url, query?.timeReading);
     }
+    await this.browser.close();
     return true;
   }
 
-  async handleMedium(url: string) {
+  async handleMedium(url: string, timeReading?: number) {
+    const page = await this.browser.newPage();
+
+    await page.goto(url);
     try {
-      const page = await this.browser.newPage();
-
-      await page.goto(url);
-
       // claps
       await page.waitForSelector("[data-testid='headerClapButton']");
 
@@ -43,6 +44,66 @@ export class MediumService {
       for (let i = 0; i < 50; i++) {
         await page.click("[data-testid='headerClapButton']");
       }
+      // read article
+      // Tìm phần tử footer trên trang web
+      const footer = await page.$('footer');
+      let distanceToFooter = 0;
+
+      if (footer) {
+        const footerBox = await footer.boundingBox();
+
+        if (footerBox) {
+          // Tính khoảng cách từ đầu trang đến footer
+          distanceToFooter = footerBox.y;
+
+          console.log(
+            'Khoảng cách từ đầu đến footer: ' + distanceToFooter + ' pixel',
+          );
+        } else {
+          console.log('Không thể tìm thấy kích thước và vị trí của footer.');
+        }
+      } else {
+        console.log('Không thể tìm thấy phần tử footer trên trang web.');
+      }
+
+      const readTime = await page.evaluate(() => {
+        const span = document.querySelector('[data-testid="storyReadTime"]');
+        if (span) {
+          return span.textContent.trim(); // Lấy nội dung và loại bỏ khoảng trắng
+        }
+        return null; // Trả về null nếu không tìm thấy thẻ span
+      });
+
+      const readTimeSeconds = timeReading
+        ? timeReading
+        : (Number(readTime?.split(' ')[0] || 1) * 60 * 1000) / 2;
+      // Sử dụng page.evaluate để truyền chúng như một đối tượng
+      await page.evaluate(
+        (distanceToFooter, readTimeSeconds) => {
+          return new Promise<void>((resolve) => {
+            const totalHeight = distanceToFooter;
+            const duration = readTimeSeconds;
+            const stepHeight = 10;
+
+            let distance = 0;
+            const scrollInterval = setInterval(
+              () => {
+                window.scrollBy(0, stepHeight);
+                distance += stepHeight;
+
+                if (distance >= totalHeight) {
+                  clearInterval(scrollInterval);
+                  resolve();
+                }
+              },
+              duration / (totalHeight / stepHeight),
+            );
+          });
+        },
+        distanceToFooter,
+        readTimeSeconds,
+      );
+      console.log('Đã cuộn hết trang web.');
 
       // comment
       await page.waitForSelector("button[aria-label='responses']");
@@ -63,10 +124,12 @@ export class MediumService {
       await page.click("[data-testid='ResponseRespondButton']");
       // Đợi một thời gian ngắn để thực hiện các thao tác khác nếu cần
       await page.waitForTimeout(2000);
+
       page.close();
       return true;
     } catch (error) {
       console.log(error);
+      page.close();
     }
   }
 
@@ -103,13 +166,13 @@ export class MediumService {
   }
 
   async increaseViewArticle(increaseViewDto: IncreaseViewDto) {
-    const { url, numberPlay } = increaseViewDto;
+    const { url, numberPlay, timeReading } = increaseViewDto;
 
     for (let i = 0; i < numberPlay; i++) {
       const options = {
         defaultViewport: null,
         args: ['--no-sandbox'],
-        headless: true,
+        headless: false,
       };
       const browser = await puppeteer.launch(options);
       const page = await browser.newPage();
@@ -147,8 +210,9 @@ export class MediumService {
           return null; // Trả về null nếu không tìm thấy thẻ span
         });
 
-        const readTimeSeconds =
-          (Number(readTime?.split(' ')[0] || 1) * 60 * 1000) / 2;
+        const readTimeSeconds = timeReading
+          ? timeReading
+          : (Number(readTime?.split(' ')[0] || 1) * 60 * 1000) / 2;
         // Sử dụng page.evaluate để truyền chúng như một đối tượng
         await page.evaluate(
           (distanceToFooter, readTimeSeconds) => {
@@ -185,6 +249,100 @@ export class MediumService {
       }
     }
 
+    return true;
+  }
+
+  async increaseViewArticleWithUserEdge(increaseViewDto: IncreaseViewDto) {
+    const { url, numberPlay, timeReading } = increaseViewDto;
+    if (!this.browserEdge) {
+      const options = {
+        headless: false,
+        defaultViewport: null,
+        executablePath:
+          'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+        userDataDir:
+          'C:\\Users\\devho\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default',
+      };
+      console.log('numberPlay', numberPlay);
+      this.browserEdge = await puppeteer.launch(options);
+    }
+
+    for (let i = 0; i < numberPlay; i++) {
+      const page = await this.browserEdge.newPage();
+
+      try {
+        await page.goto(url);
+
+        await page.waitForTimeout(1000);
+
+        // Tìm phần tử footer trên trang web
+        const footer = await page.$('footer');
+        let distanceToFooter = 0;
+
+        if (footer) {
+          const footerBox = await footer.boundingBox();
+
+          if (footerBox) {
+            // Tính khoảng cách từ đầu trang đến footer
+            distanceToFooter = footerBox.y;
+
+            console.log(
+              'Khoảng cách từ đầu đến footer: ' + distanceToFooter + ' pixel',
+            );
+          } else {
+            console.log('Không thể tìm thấy kích thước và vị trí của footer.');
+          }
+        } else {
+          console.log('Không thể tìm thấy phần tử footer trên trang web.');
+        }
+
+        const readTime = await page.evaluate(() => {
+          const span = document.querySelector('[data-testid="storyReadTime"]');
+          if (span) {
+            return span.textContent.trim(); // Lấy nội dung và loại bỏ khoảng trắng
+          }
+          return null; // Trả về null nếu không tìm thấy thẻ span
+        });
+
+        const readTimeSeconds = timeReading
+          ? timeReading
+          : (Number(readTime?.split(' ')[0] || 1) * 60 * 1000) / 2;
+        // Sử dụng page.evaluate để truyền chúng như một đối tượng
+        await page.evaluate(
+          (distanceToFooter, readTimeSeconds) => {
+            return new Promise<void>((resolve) => {
+              const totalHeight = distanceToFooter;
+              const duration = readTimeSeconds;
+              const stepHeight = 10;
+
+              let distance = 0;
+              const scrollInterval = setInterval(
+                () => {
+                  window.scrollBy(0, stepHeight);
+                  distance += stepHeight;
+
+                  if (distance >= totalHeight) {
+                    clearInterval(scrollInterval);
+                    resolve();
+                  }
+                },
+                duration / (totalHeight / stepHeight),
+              );
+            });
+          },
+          distanceToFooter,
+          readTimeSeconds,
+        );
+        console.log('Đã đọc hết. Lần thứ' + i);
+        await page.close();
+        // Đợi một thời gian ngắn để thực hiện các thao tác khác nếu cần
+      } catch (error) {
+        console.log(error);
+
+        await this.browserEdge.close();
+      }
+    }
+    await this.browserEdge.close();
     return true;
   }
 }

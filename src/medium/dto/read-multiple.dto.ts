@@ -1,10 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray } from 'class-validator';
 
 export class ReadMultipleDto {
   @ApiProperty({
-    default: ['url1'],
+    default: [''],
   })
-  @IsArray()
   listUrl: string[];
+
+  @ApiProperty({
+    default: 2000,
+    description: 'Time reading in milliseconds',
+  })
+  timeReading: number;
 }
