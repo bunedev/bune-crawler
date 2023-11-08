@@ -8,7 +8,10 @@ export class MediumService {
   browser: puppeteer.Browser;
   browserEdge: puppeteer.Browser;
   distanceToFooter: number;
-  constructor() {}
+  count: number;
+  constructor() {
+    this.count = 0;
+  }
 
   async readMultipleMedium(query: ReadMultipleDto) {
     const { listUrl } = query;
@@ -28,7 +31,9 @@ export class MediumService {
     for (const url of listUrl) {
       await this.handleMedium(url, query?.timeReading);
     }
+
     await this.browser.close();
+    this.browser = null;
     return true;
   }
 
@@ -242,6 +247,8 @@ export class MediumService {
         console.log('Đã cuộn hết trang web.');
 
         // Đợi một thời gian ngắn để thực hiện các thao tác khác nếu cần
+        this.count++;
+        console.log('Tổng số lần: ', this.count);
         await page.waitForTimeout(2000);
         await browser.close();
       } catch (error) {
@@ -333,7 +340,8 @@ export class MediumService {
           distanceToFooter,
           readTimeSeconds,
         );
-        console.log('Đã đọc hết. Lần thứ' + i);
+        this.count++;
+        console.log('Tổng số lần: ', this.count);
         await page.close();
         // Đợi một thời gian ngắn để thực hiện các thao tác khác nếu cần
       } catch (error) {
@@ -343,6 +351,7 @@ export class MediumService {
       }
     }
     await this.browserEdge.close();
+    this.browserEdge = null;
     return true;
   }
 }
