@@ -22,5 +22,6 @@ async function bootstrap() {
   SwaggerModule.setup(swaggerPath, app, document, swaggerSetupOptions);
 
   await app.listen(5000);
+  console.log('APP listen on ');
 }
 bootstrap();

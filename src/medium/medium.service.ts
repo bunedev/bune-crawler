@@ -107,77 +107,82 @@ export class MediumService {
 
     for (let i = 0; i < numberPlay; i++) {
       const options = {
-        headless: false,
         defaultViewport: null,
+        args: ['--no-sandbox'],
+        headless: true,
       };
       const browser = await puppeteer.launch(options);
       const page = await browser.newPage();
+      try {
+        await page.goto(url);
 
-      await page.goto(url);
+        await page.waitForTimeout(2000);
 
-      await page.waitForTimeout(2000);
+        // Tìm phần tử footer trên trang web
+        const footer = await page.$('footer');
+        let distanceToFooter = 0;
 
-      // Tìm phần tử footer trên trang web
-      const footer = await page.$('footer');
-      let distanceToFooter = 0;
+        if (footer) {
+          const footerBox = await footer.boundingBox();
 
-      if (footer) {
-        const footerBox = await footer.boundingBox();
+          if (footerBox) {
+            // Tính khoảng cách từ đầu trang đến footer
+            distanceToFooter = footerBox.y;
 
-        if (footerBox) {
-          // Tính khoảng cách từ đầu trang đến footer
-          distanceToFooter = footerBox.y;
-
-          console.log(
-            'Khoảng cách từ đầu đến footer: ' + distanceToFooter + ' pixel',
-          );
-        } else {
-          console.log('Không thể tìm thấy kích thước và vị trí của footer.');
-        }
-      } else {
-        console.log('Không thể tìm thấy phần tử footer trên trang web.');
-      }
-
-      const readTime = await page.evaluate(() => {
-        const span = document.querySelector('[data-testid="storyReadTime"]');
-        if (span) {
-          return span.textContent.trim(); // Lấy nội dung và loại bỏ khoảng trắng
-        }
-        return null; // Trả về null nếu không tìm thấy thẻ span
-      });
-
-      const readTimeSeconds = Number(readTime?.split(' ')[0] || 1) * 60 * 1000;
-      console.log('readTimeSeconds', readTimeSeconds);
-      // Sử dụng page.evaluate để truyền chúng như một đối tượng
-      await page.evaluate(
-        (distanceToFooter, readTimeSeconds) => {
-          return new Promise<void>((resolve) => {
-            const totalHeight = distanceToFooter;
-            const duration = readTimeSeconds;
-            const stepHeight = 10;
-
-            let distance = 0;
-            const scrollInterval = setInterval(
-              () => {
-                window.scrollBy(0, stepHeight);
-                distance += stepHeight;
-
-                if (distance >= totalHeight) {
-                  clearInterval(scrollInterval);
-                  resolve();
-                }
-              },
-              duration / (totalHeight / stepHeight),
+            console.log(
+              'Khoảng cách từ đầu đến footer: ' + distanceToFooter + ' pixel',
             );
-          });
-        },
-        distanceToFooter,
-        readTimeSeconds,
-      );
+          } else {
+            console.log('Không thể tìm thấy kích thước và vị trí của footer.');
+          }
+        } else {
+          console.log('Không thể tìm thấy phần tử footer trên trang web.');
+        }
 
-      // Đợi một thời gian ngắn để thực hiện các thao tác khác nếu cần
-      await page.waitForTimeout(2000);
-      await browser.close();
+        const readTime = await page.evaluate(() => {
+          const span = document.querySelector('[data-testid="storyReadTime"]');
+          if (span) {
+            return span.textContent.trim(); // Lấy nội dung và loại bỏ khoảng trắng
+          }
+          return null; // Trả về null nếu không tìm thấy thẻ span
+        });
+
+        const readTimeSeconds =
+          (Number(readTime?.split(' ')[0] || 1) * 60 * 1000) / 2;
+        // Sử dụng page.evaluate để truyền chúng như một đối tượng
+        await page.evaluate(
+          (distanceToFooter, readTimeSeconds) => {
+            return new Promise<void>((resolve) => {
+              const totalHeight = distanceToFooter;
+              const duration = readTimeSeconds;
+              const stepHeight = 10;
+
+              let distance = 0;
+              const scrollInterval = setInterval(
+                () => {
+                  window.scrollBy(0, stepHeight);
+                  distance += stepHeight;
+
+                  if (distance >= totalHeight) {
+                    clearInterval(scrollInterval);
+                    resolve();
+                  }
+                },
+                duration / (totalHeight / stepHeight),
+              );
+            });
+          },
+          distanceToFooter,
+          readTimeSeconds,
+        );
+        console.log('Đã cuộn hết trang web.');
+
+        // Đợi một thời gian ngắn để thực hiện các thao tác khác nếu cần
+        await page.waitForTimeout(2000);
+        await browser.close();
+      } catch (error) {
+        await browser.close();
+      }
     }
 
     return true;
