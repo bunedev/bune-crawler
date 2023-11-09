@@ -354,4 +354,28 @@ export class MediumService {
     this.browserEdge = null;
     return true;
   }
+
+  async login(urlLogin: string) {
+    try {
+      if (!this.browser) {
+        // Khởi động trình duyệt nếu chưa tồn tại
+        const options = {
+          headless: false,
+          defaultViewport: null,
+          executablePath:
+            'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+          userDataDir:
+            'C:\\Users\\devho\\AppData\\Local\\Google\\Chrome\\User Data\\Default',
+        };
+        this.browser = await puppeteer.launch(options);
+      }
+      const page = await this.browser.newPage();
+
+      await page.goto(urlLogin);
+      this.browser = null;
+    } catch (error) {
+      console.log(error);
+      this.browser = null;
+    }
+  }
 }
