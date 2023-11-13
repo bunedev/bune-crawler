@@ -161,6 +161,16 @@ export class MediumService {
       'Your content always stands out. Well done!',
       'You have a unique perspective that I appreciate.',
       'Your articles are a valuable resource. Thank you!',
+      'Thank you for sharing your insights. Reading your article was the highlight of my day. Your depth of understanding on this subject shines through in your detailed analysis and engaging writing style.',
+      "I'm genuinely impressed by the clarity and depth of your article. It’s evident that a lot of research and thought went into this, and I learned a great deal from your nuanced perspective.",
+      'This was an incredibly informative read. You have a unique ability to discuss complex topics in a way that’s both accessible and engaging. Looking forward to your next piece!',
+      "Your writing never fails to engage me. This article is no exception. The way you've structured your arguments and supported them with evidence is commendable.",
+      'What a refreshing take on a topic that I thought had been covered in every possible way. Your fresh perspective and detailed explanations have provided me with a lot to ponder.',
+      "Excellent work on this article. Your in-depth knowledge and passion for the subject matter come through in every paragraph. It's a pleasure to read content that is both informative and well-crafted.",
+      "I must commend you on your eloquent writing and the comprehensive coverage of the topic. It's rare to find such a well-rounded piece that provides such a thorough understanding.",
+      "Your article was a real eye-opener for me. The level of detail you provide and the engaging way in which you present your points is exceptional. I'm eagerly anticipating your future articles.",
+      'You have a remarkable talent for explaining complex issues in a clear and thought-provoking manner. This article is a testament to that talent, and I feel much more informed having read it.',
+      "I'm thoroughly impressed by the depth of your article. The way you've dissected the topic and presented your viewpoints is exemplary. It's content like this that keeps me coming back to Medium.",
     ];
 
     // Chọn ngẫu nhiên một phương án khen bài từ mảng
