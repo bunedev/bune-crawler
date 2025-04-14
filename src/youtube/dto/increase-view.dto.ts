@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Max, Min } from 'class-validator';
 
-export class IncreaseViewDto {
+export class IncreaseViewYoutubeDto {
   @ApiProperty({
     default: '',
   })
@@ -14,21 +14,16 @@ export class IncreaseViewDto {
   numberPlay: number;
 
   @ApiProperty({
-    default: 2000,
-    description: 'Time reading in milliseconds',
+    default: 30,
+    description: 'Time reading in seconds',
   })
   timeReading: number;
-  @ApiProperty({
-    default: 2000,
-    description: 'Time reading in milliseconds',
-  })
-  maxTimeReading: number;
-  
-  // number of session to increase view
+
+  // số phiên làm việc
   @ApiProperty({
     default: 1,
   })
   @Min(1)
   @Max(10)
-  session: number;
+  numberSession: number;
 }
