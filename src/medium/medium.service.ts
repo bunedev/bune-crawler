@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as puppeteer from 'puppeteer';
 import { ReadMultipleDto } from './dto/read-multiple.dto';
 import { IncreaseViewDto } from './dto/increase-view.dto';
+import { getRandomUSLocation } from 'src/common/helper';
 
 @Injectable()
 export class MediumService {
@@ -23,15 +24,15 @@ export class MediumService {
         executablePath:
           'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
         userDataDir:
-          'C:\\Users\\devho\\AppData\\Local\\Google\\Chrome\\User Data\\Default',
+          'C:\\Users\\kien\\AppData\\Local\\Google\\Chrome\\User Data\\Default',
       };
       this.browser = await puppeteer.launch(options);
     }
-
+    const promises = [];
     for (const url of listUrl) {
-      await this.handleMedium(url, query?.timeReading);
+      promises.push(this.handleMedium(url, query?.timeReading));
     }
-
+    await Promise.all(promises);
     await this.browser.close();
     this.browser = null;
     return true;
@@ -88,7 +89,7 @@ export class MediumService {
           return new Promise<void>((resolve) => {
             const totalHeight = distanceToFooter;
             const duration = readTimeSeconds;
-            const stepHeight = 10;
+            const stepHeight = 5;
 
             let distance = 0;
             const scrollInterval = setInterval(
@@ -131,6 +132,7 @@ export class MediumService {
       await page.waitForTimeout(2000);
 
       page.close();
+
       return true;
     } catch (error) {
       console.log(error);
@@ -171,6 +173,54 @@ export class MediumService {
       "Your article was a real eye-opener for me. The level of detail you provide and the engaging way in which you present your points is exceptional. I'm eagerly anticipating your future articles.",
       'You have a remarkable talent for explaining complex issues in a clear and thought-provoking manner. This article is a testament to that talent, and I feel much more informed having read it.',
       "I'm thoroughly impressed by the depth of your article. The way you've dissected the topic and presented your viewpoints is exemplary. It's content like this that keeps me coming back to Medium.",
+      'I came for knowledge, but stayed for the vibe. 🔥',
+      'Did you just drop wisdom or was that a mic? 🎤',
+      'This article just upgraded my brain’s firmware. 🤯',
+      'Why is this free? I feel like I owe you coffee money now. ☕💸',
+      'Medium should start charging extra for content this good.',
+      'Your brain needs to be protected at all costs.',
+      'Teach me, Sensei. 🥋',
+      'I didn’t read this — I *consumed* it. Like a hungry dragon.',
+      'If this were a dish, it would be 3 Michelin stars. 🍽️✨',
+      'This is the kind of article that makes me rethink my entire life. In a good way.',
+      'You just hit me with facts, humor, and inspiration. Triple combo!',
+      'Okay, now you *have* to write a book. I’ll preorder.',
+      'I want to print this and tape it to my mirror.',
+      'How is this better than my university course?',
+      'Brain = blessed. Mood = uplifted. Eyes = opened.',
+      'Loved this so much. Can we be friends?',
+      'Following immediately — this kind of writing is rare!',
+      'This article found me exactly when I needed it.',
+      'Thank you for putting this into words. You’re doing the Lord’s work.',
+      'Your writing voice is so refreshing. Please don’t stop.',
+      'This is the Medium equivalent of a warm hug.',
+      'Can I bookmark this and read it every Monday?',
+      'I didn’t know I needed this until now.',
+      'You just made my day 100x better.',
+      'This should be required reading. Everywhere.',
+      'SLAYED. Literally ate and left no crumbs. 💅🔥',
+      'Big brain energy detected. 💡👀',
+      'Who gave you the right to be this insightful?!',
+      'Okay now I feel called out but in the best way.',
+      'Respectfully… I’m obsessed with your writing.',
+      'This article is giving ✨main character energy✨.',
+      'Medium? More like Max-imum value. 😎',
+      'This made my ADHD brain feel seen. I am emotional.',
+      'I read this once and I’m already more emotionally intelligent.',
+      'This should be on Netflix as a docuseries.',
+      'You’ve articulated what so many of us feel but can’t explain.',
+      'This connected so many dots for me.',
+      'Sometimes you read something and it just *clicks.* This is one of those times.',
+      'This wasn’t just a good article. It was a mirror.',
+      'I wish I had this insight 5 years ago — but I’m glad I found it today.',
+      'Your words have weight. Thank you for sharing them.',
+      'I read this slowly, just to make it last longer.',
+      'This is not just writing. It’s art.',
+      'Saved, shared, and re-read. This is gold.',
+      'You didn’t write a blog post. You wrote a breakthrough.',
+      'Whew. That hit home.',
+      'Can’t stop nodding while reading.',
+      'This belongs on every ‘must-read’ list.',
     ];
 
     // Chọn ngẫu nhiên một phương án khen bài từ mảng
@@ -180,17 +230,30 @@ export class MediumService {
     return randomComment;
   }
 
-  async increaseViewArticle(increaseViewDto: IncreaseViewDto) {
-    const { url, numberPlay, timeReading } = increaseViewDto;
+  async increaseViewArticleWithUserChrome(increaseViewDto: IncreaseViewDto) {
+    const { url, numberPlay, timeReading, session } = increaseViewDto;
+    const promises = [];
+    for (let i = 0; i < session; i++) {
+      promises.push(this.increaseViewArticle(increaseViewDto));
+    }
+    await Promise.all(promises);
+    return true;
+  }
 
+  async increaseViewArticle(increaseViewDto: IncreaseViewDto) {
+    const { url, numberPlay, timeReading, maxTimeReading } = increaseViewDto;
     for (let i = 0; i < numberPlay; i++) {
       const options = {
-        defaultViewport: null,
-        args: ['--no-sandbox'],
         headless: false,
+        defaultViewport: null,
+        ignoreDefaultArgs: ['--disable-extensions'],
       };
       const browser = await puppeteer.launch(options);
-      const page = await browser.newPage();
+      const context = await browser.createIncognitoBrowserContext();
+      await context.overridePermissions(url, ['geolocation']);
+      const page = await context.newPage();
+      const location = getRandomUSLocation();
+      await page.setGeolocation(location);
       try {
         await page.goto(url);
 
@@ -224,10 +287,19 @@ export class MediumService {
           }
           return null; // Trả về null nếu không tìm thấy thẻ span
         });
+        console.log('maxTimeReading', maxTimeReading);
+        console.log('timeReading', timeReading);
 
-        const readTimeSeconds = timeReading
-          ? timeReading
+        const timeRedingArticle =
+          (Math.floor(Math.random() * (maxTimeReading - timeReading)) +
+            timeReading) /
+          100000;
+        console.log('timeRedingArticle', timeRedingArticle);
+
+        const readTimeSeconds = timeRedingArticle
+          ? timeRedingArticle
           : (Number(readTime?.split(' ')[0] || 1) * 60 * 1000) / 2;
+        console.log('readTimeSeconds', readTimeSeconds);
         // Sử dụng page.evaluate để truyền chúng như một đối tượng
         await page.evaluate(
           (distanceToFooter, readTimeSeconds) => {
@@ -278,14 +350,15 @@ export class MediumService {
         executablePath:
           'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
         userDataDir:
-          'C:\\Users\\devho\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default',
+          'C:\\Users\\kien\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default',
       };
       console.log('numberPlay', numberPlay);
       this.browserEdge = await puppeteer.launch(options);
     }
 
     for (let i = 0; i < numberPlay; i++) {
-      const page = await this.browserEdge.newPage();
+      const context = await this.browserEdge.createIncognitoBrowserContext();
+      const page = await context.newPage();
 
       try {
         await page.goto(url);
@@ -375,7 +448,7 @@ export class MediumService {
           executablePath:
             'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
           userDataDir:
-            'C:\\Users\\devho\\AppData\\Local\\Google\\Chrome\\User Data\\Default',
+            'C:\\Users\\kien\\AppData\\Local\\Google\\Chrome\\User Data\\Default',
         };
         this.browser = await puppeteer.launch(options);
       }

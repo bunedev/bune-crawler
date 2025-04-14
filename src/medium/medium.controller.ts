@@ -34,7 +34,7 @@ export class MediumController {
     summary: 'increase view for a medium article none user: chormium',
   })
   async increaseViewArticle(@Query() increaseViewDto: IncreaseViewDto) {
-    return await this.mediumService.increaseViewArticle(increaseViewDto);
+    return await this.mediumService.increaseViewArticleWithUserChrome(increaseViewDto);
   }
 
   @Get('increase-view-with-user-edge')
